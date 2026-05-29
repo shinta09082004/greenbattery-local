@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EneMap AI - Ver.AI (Update 2)</title>
+
+    <!-- アイコン設定 (favicon) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔋</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔋</text></svg>">
+    <meta name="apple-mobile-web-app-title" content="EneMap AI">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <style>
+        body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; background: #f4f7f6; color: #333; }
+        header { background: #1a202c; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1001; }
+        .logo { font-size: 1.5rem; font-weight: bold; color: #48bb78; }
+        .ver-tag { font-size: 0.7rem; background: #4299e1; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+        .search-bar { display: flex; gap: 10px; align-items: center; background: #2d3748; padding: 5px 15px; border-radius: 8px; }
+        
+        main { display: flex; flex: 1; overflow: hidden; }
+        #sidebar { width: 350px; background: white; border-right: 1px solid #e2e8f0; overflow-y: auto; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 15px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+        .candidate-card { padding: 15px; border-bottom: 1px solid #edf2f7; cursor: pointer; transition: background 0.2s; }
+        .candidate-card:hover { background: #f0fff4; }
+        .candidate-card.active { border-left: 4px solid #48bb78; background: #f0fff4; }
+        .tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; margin-right: 4px; }
+        .tag-success { background: #c6f6d5; color: #22543d; }
+        
+        #map-container { flex: 1; position: relative; }
+        #map { height: 100%; width: 100%; }
+        
+        .info-panel { position: absolute; bottom: 20px; right: 20px; z-index: 1000; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 320px; display: none; }
+        .btn-primary { background: #48bb78; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn-primary:hover { background: #38a169; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); z-index: 2000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; width: 800px; max-width: 95%; height: 80vh;
+            border-radius: 12px; display: flex; flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); overflow: hidden;
+        }
+        .modal-header {
+            background: #1a202c; color: white; padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-body {
+            padding: 20px; overflow-y: auto; flex: 1; background: #f8fafc;
+        }
+        .region-group { margin-bottom: 20px; }
+        .region-title { font-weight: bold; color: #4a5568; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; }
+        .pref-grid, .city-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+        .city-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+        .area-btn {
+            background: white; border: 1px solid #cbd5e0; padding: 10px;
+            border-radius: 6px; text-align: center; cursor: pointer;
+            transition: all 0.2s; color: #2d3748; font-size: 0.9rem;
+        }
+        .area-btn:hover { background: #ebf8ff; border-color: #4299e1; color: #2b6cb0; }
+        
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #48bb78; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+
+        .ai-eval-box { background: #f0f9ff; border: 1px solid #bae6fd; padding: 12px; border-radius: 8px; margin-top: 15px; }
+        .ai-title { color: #0369a1; font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">ENEMAP AI <span class="ver-tag">Ver.AI Update 2</span></div>
+        <div class="search-bar">
+            <button class="btn-primary" style="margin:0; width:auto; padding:8px 15px; display:flex; align-items:center; gap:5px;" onclick="openModal()">
+                住所から探す
+            </button>
+            <div style="width: 1px; height: 20px; background: #4a5568; margin: 0 10px;"></div>
+            <button class="btn-primary" style="margin:0; width:auto; padding:5px 15px;" onclick="searchCandidates()">AIリアルタイム検索</button>
+        </div>
+        <div>
+            <span id="user-email" style="color: #cbd5e0; margin-right: 15px; font-size: 0.9rem;"></span>
+            <button id="logout-btn" style="background:none; border:1px solid #4a5568; color:white; padding:5px 10px; border-radius:4px; cursor:pointer; display:none;" onclick="logout()">ログアウト</button>
+        </div>
+    </header>
+
+    <main id="main-content" style="display:none;">
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <div style="font-weight:bold; font-size:1.1rem;">Ver.AI 候補地リスト (<span id="count">0</span>件)</div>
+                <div style="font-size:0.8rem; color:#718096;">現在表示中のエリア内</div>
+            </div>
+            <div id="list-container"></div>
+        </div>
+
+        <div id="map-container">
+            <div id="map"></div>
+            <div class="info-panel" id="parcel-info"></div>
+        </div>
+    </main>
+
+    <div id="loading-overlay" class="modal-overlay" style="z-index: 3000; flex-direction: column; color: white; background: rgba(0,0,0,0.7);">
+        <div class="loading-spinner"></div>
+        <h2 style="margin: 0;">🤖 AIが土地を分析中...</h2>
+        <p style="color: #cbd5e0; margin-top: 10px; text-align: center;">周辺の地図・建物・道路データを取得し、<br>平坦・接道・離隔条件を計算しています（数秒かかります）</p>
+    </div>
+
+    <!-- 認証モーダル -->
+    <div id="auth-modal" class="modal-overlay" style="display: flex;">
+        <div class="modal-content" style="width: 400px; height: auto; padding: 30px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 id="auth-title" style="margin:0; color: #1a202c;">EneMap AI Ver.AI</h2>
+                <p style="color: #718096; font-size: 0.9rem;">次世代土地探索プラットフォーム</p>
+            </div>
+            <div class="auth-form" onsubmit="return false;">
+                <input type="email" id="auth-email" class="auth-input" placeholder="メールアドレス" value="admin@example.com">
+                <input type="password" id="auth-password" class="auth-input" placeholder="パスワード" value="password123">
+                <button class="btn-primary" style="padding: 12px;" onclick="handleAuth()" id="auth-submit-btn">ログイン</button>
+                <div style="text-align:center; font-size:0.85rem; color:#718096; cursor:pointer; margin-top: 10px;" onclick="toggleAuthMode()" id="auth-toggle-text">
+                    アカウントをお持ちでない方はこちら（新規登録）
+                </div>
+                <div id="auth-error" style="color:red; font-size:0.8rem; text-align:center; display:none; margin-top: 10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 住所選択モーダル -->
+    <div id="address-modal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modal-title" style="margin:0; font-size:1.2rem;">都道府県を選択してください</h3>
+                <button onclick="closeModal(true)" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('gb_token');
+        let authMode = 'login';
+        let isSubscribed = false;
+
+        window.onload = function() {
+            if (authToken) { checkSubscriptionAndShow(); } else { showLogin(); }
+        };
+
+        function showLogin() {
+            document.getElementById('auth-modal').style.display = 'flex';
+            document.getElementById('main-content').style.display = 'none';
+        }
+
+        async function checkSubscriptionAndShow() {
+            try {
+                const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${authToken}` } });
+                if (res.status === 401) { logout(); return; }
+                const user = await res.json();
+                isSubscribed = user.is_subscribed;
+                localStorage.setItem('gb_email', user.email);
+                showApp();
+            } catch (e) { showLogin(); }
+        }
+
+        function showApp() {
+            document.getElementById('auth-modal').style.display = 'none';
+            document.getElementById('main-content').style.display = 'flex';
+            document.getElementById('logout-btn').style.display = 'inline-block';
+            document.getElementById('user-email').innerText = (isSubscribed ? "⭐ Pro会員: " : "") + localStorage.getItem('gb_email');
+            initMap();
+        }
+
+        function logout() {
+            localStorage.removeItem('gb_token');
+            localStorage.removeItem('gb_email');
+            location.reload();
+        }
+
+        function toggleAuthMode() {
+            authMode = (authMode === 'login') ? 'register' : 'login';
+            document.getElementById('auth-title').innerText = (authMode === 'login') ? 'EneMap AI Ver.AI' : '新規アカウント作成';
+            document.getElementById('auth-submit-btn').innerText = (authMode === 'login') ? 'ログイン' : '会員登録';
+            document.getElementById('auth-toggle-text').innerText = (authMode === 'login') ? 'アカウントをお持ちでない方はこちら（新規登録）' : 'すでにアカウントをお持ちの方はこちら';
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const errorDiv = document.getElementById('auth-error');
+            errorDiv.style.display = 'none';
+            try {
+                if (authMode === 'register') {
+                    const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+                    if (!res.ok) throw new Error('登録失敗');
+                    alert('登録完了'); toggleAuthMode();
+                } else {
+                    const formData = new FormData();
+                    formData.append('username', email);
+                    formData.append('password', password);
+                    const res = await fetch('/api/auth/token', { method: 'POST', body: formData });
+                    if (!res.ok) throw new Error('ログイン失敗');
+                    const data = await res.json();
+                    authToken = data.access_token;
+                    localStorage.setItem('gb_token', authToken);
+                    localStorage.setItem('gb_email', email);
+                    checkSubscriptionAndShow();
+                }
+            } catch (e) { errorDiv.innerText = e.message; errorDiv.style.display = 'block'; }
+        }
+
+        var map, markerClusterGroup, polygonLayerGroup;
+        function initMap() {
+            if (map) return;
+            map = L.map('map', { preferCanvas: true }).setView([38.765, 140.301], 15);
+            L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { attribution: '© Google Maps' }).addTo(map);
+            
+            // ピンのレイヤー（常に表示）
+            markerClusterGroup = L.markerClusterGroup({ 
+                disableClusteringAtZoom: 16,
+                maxClusterRadius: 50
+            });
+            map.addLayer(markerClusterGroup);
+
+            // ポリゴンのレイヤー（詳細時のみ表示）
+            polygonLayerGroup = L.layerGroup();
+            
+            map.on('zoomend', refreshVisibility);
+            map.on('moveend', updateList);
+            searchCandidates();
+        }
+
+        function refreshVisibility() {
+            if (!map) return;
+            const zoom = map.getZoom();
+            if (zoom >= 16) {
+                // 詳細ズーム時はポリゴンを表示
+                if (!map.hasLayer(polygonLayerGroup)) map.addLayer(polygonLayerGroup);
+            } else {
+                // 広域ズーム時はポリゴンを隠す（ピンはそのまま）
+                if (map.hasLayer(polygonLayerGroup)) map.removeLayer(polygonLayerGroup);
+            }
+        }
+
+        var candidates = [];
+        async function searchCandidates() {
+            if (!map) return;
+            map.dragging.disable();
+            document.getElementById('loading-overlay').style.display = 'flex';
+            var b = map.getBounds();
+            try {
+                const response = await fetch(`/api/candidates?north=${b.getNorth()}&south=${b.getSouth()}&east=${b.getEast()}&west=${b.getWest()}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                const existingIds = new Set(candidates.map(c => c.id));
+                data.forEach(d => { if (!existingIds.has(d.id)) candidates.push(d); });
+                renderMarkers();
+                updateList();
+            } finally {
+                map.dragging.enable();
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+
+        function renderMarkers() {
+            // 一旦クリア
+            markerClusterGroup.clearLayers();
+            polygonLayerGroup.clearLayers();
+
+            candidates.forEach(c => {
+                // 1. クラスター用ピンの作成 (ズームアウト時はすべてピン)
+                const m = L.marker([c.lat, c.lon]);
+                m.on('click', () => showDetails(c));
+                markerClusterGroup.addLayer(m);
+
+                // 2. 詳細ズーム時 (zoom >= 16) の表示
+                if (c.geometry) {
+                    // 農地データなど: ポリゴンとして描画
+                    try {
+                        const geom = JSON.parse(c.geometry);
+                        if (geom.type === "Polygon" || geom.type === "MultiPolygon") {
+                            const l = L.geoJSON(geom, { 
+                                style: { color: "#27ae60", weight: 2, fillColor: "#2ecc71", fillOpacity: 0.5 } 
+                            });
+                            l.on('click', () => showDetails(c));
+                            polygonLayerGroup.addLayer(l);
+                        }
+                    } catch (e) {
+                        console.error("GeoJSON parse error", e);
+                    }
+                } else {
+                    // AI抽出データなど: ポリゴンを持たない場合は、詳細ズーム時もピンとして表示する
+                    const m_detail = L.marker([c.lat, c.lon]);
+                    m_detail.on('click', () => showDetails(c));
+                    polygonLayerGroup.addLayer(m_detail);
+                }
+            });
+            refreshVisibility();
+        }
+
+        function updateList() {
+            if (!map) return;
+            var b = map.getBounds();
+            var visibleCount = 0;
+            document.getElementById('list-container').innerHTML = '';
+            candidates.forEach(c => {
+                if (b.contains(L.latLng(c.lat, c.lon))) {
+                    visibleCount++;
+                    const card = document.createElement('div');
+                    card.className = 'candidate-card';
+                    card.innerHTML = `<div style="font-weight:bold;">${c.id}</div><div style="font-size:0.8rem;">傾斜: ${c.slope}° | 離隔: ${c.dist}m</div>`;
+                    card.onclick = () => { map.setView([c.lat, c.lon], 17); showDetails(c); };
+                    document.getElementById('list-container').appendChild(card);
+                }
+            });
+            document.getElementById('count').innerText = visibleCount;
+        }
+
+        function showDetails(c) {
+            var panel = document.getElementById('parcel-info');
+            panel.style.display = 'block';
+            let registryHtml = c.chiban ? `
+                <div style="background:#ebf8ff; padding:10px; border-radius:6px; border:1px solid #bee3f8;">
+                    <b>地番:</b> ${c.chiban}<br><b>地目:</b> ${c.chimoku}<br><b>所有者:</b> ${c.owner}
+                </div>` : `<button class="btn-primary" onclick="fetchRegistryInfo('${c.id}', ${c.lat}, ${c.lon})">登記情報を一括取得</button>`;
+
+            panel.innerHTML = `
+                <div style="display:flex; justify-content:space-between;"><h3>${c.id}</h3><button onclick="this.parentElement.parentElement.style.display='none'" style="border:none; background:none;">×</button></div>
+                <div style="margin-top:10px; font-size:0.9rem;">傾斜: ${c.slope}° ✅ | 離隔: ${c.dist}m ✅</div>
+                <div class="ai-eval-box">
+                    <div class="ai-title">🤖 AI土地評価 (Ver.AI)</div>
+                    <div style="font-size:0.8rem; color:#4a5568;">自律スカウトによって発見された最適地点です。接道状況が非常に良く、開発コストを抑えられる可能性があります。</div>
+                </div>
+                <hr style="margin:15px 0; border:0; border-top:1px solid #eee;">
+                <div id="registry-result-${c.id}">${registryHtml}</div>
+                <button class="btn-primary" onclick="window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${c.lat},${c.lon}')">ストリートビューで確認</button>
+            `;
+        }
+
+        async function fetchRegistryInfo(id, lat, lon) {
+            const resultDiv = document.getElementById('registry-result-' + id);
+            resultDiv.innerHTML = "🔄 照会中...";
+            try {
+                const res = await fetch('/api/registry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify([{ id, lat, lon }])
+                });
+                const data = await res.json();
+                const reg = data[0];
+                const c = candidates.find(cand => cand.id === id);
+                if (c) { c.chiban = reg.chiban; c.chimoku = reg.chimoku; c.owner = reg.owner; }
+                resultDiv.innerHTML = `<div style="background:#ebf8ff; padding:10px; border-radius:6px;"><b>地番:</b> ${reg.chiban}<br><b>地目:</b> ${reg.chimoku}<br><b>所有者:</b> ${reg.owner}</div>`;
+            } catch (e) { resultDiv.innerHTML = "❌ 失敗"; }
+        }
+
+        async function redirectToCheckout() {
+            try {
+                const res = await fetch('/api/stripe/create-checkout-session', { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` } });
+                const data = await res.json();
+                if (data.url) window.location.href = data.url;
+            } catch (e) { alert('決済エラー'); }
+        }
+
+        // --- 住所モーダル ---
+        const prefectures = [
+            { region: "北海道・東北", prefs: ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県"] },
+            { region: "関東", prefs: ["茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県"] },
+            { region: "中部", prefs: ["新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県"] },
+            { region: "近畿", prefs: ["三重県", "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県"] },
+            { region: "中国", prefs: ["鳥取県", "島根県", "岡山県", "広島県", "山口県"] },
+            { region: "四国", prefs: ["徳島県", "香川県", "愛媛県", "高知県"] },
+            { region: "九州・沖縄", prefs: ["福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"] }
+        ];
+        let selectedPref = "";
+        function openModal() { document.getElementById('address-modal').style.display = 'flex'; showPrefectures(); }
+        function closeModal(force=false) { if(force || (event && event.target.id === 'address-modal')) document.getElementById('address-modal').style.display = 'none'; }
+        
+        function showPrefectures() {
+            document.getElementById('modal-title').innerText = "都道府県を選択";
+            let html = "";
+            prefectures.forEach(g => {
+                html += `<div class="region-group"><div class="region-title">${g.region}</div><div class="pref-grid">`;
+                g.prefs.forEach(p => { html += `<button class="area-btn" onclick="selectPrefecture('${p}')">${p}</button>`; });
+                html += `</div></div>`;
+            });
+            document.getElementById('modal-body').innerHTML = html;
+        }
+
+        async function selectPrefecture(pref) {
+            selectedPref = pref;
+            document.getElementById('modal-title').innerHTML = `<button onclick="showPrefectures()" style="background:none; border:none; color:#a0aec0; cursor:pointer;">◀ </button> ${pref}の市区町村`;
+            document.getElementById('modal-body').innerHTML = `<div style="text-align:center; padding:40px;">🔄 取得中...</div>`;
+            try {
+                const res = await fetch(`https://geoapi.heartrails.com/api/json?method=getCities&prefecture=${encodeURIComponent(pref)}`);
+                const data = await res.json();
+                if (!data.response || !data.response.location) { throw new Error('Data Empty'); }
+                let cities = data.response.location;
+                cities.sort((a, b) => a.city_kana.localeCompare(b.city_kana, 'ja'));
+                let html = `<div class="city-grid">`;
+                cities.forEach(c => { html += `<button class="area-btn" onclick="selectCity('${c.city}')">${c.city}</button>`; });
+                document.getElementById('modal-body').innerHTML = html + `</div>`;
+            } catch (e) { document.getElementById('modal-body').innerHTML = `<div style="color:red; text-align:center;">データの取得に失敗しました。</div><button class="btn-primary" onclick="selectPrefecture('${pref}')">再試行</button>`; }
+        }
+
+        async function selectCity(city) {
+            document.getElementById('address-modal').style.display = 'none';
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(selectedPref + city)}`);
+                const data = await res.json();
+                if (data.length > 0) map.flyTo([parseFloat(data[0].lat), parseFloat(data[0].lon)], 13);
+            } catch(e) { alert("座標の特定に失敗しました。"); }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- 基本的なSEOメタタグ -->
+    <title>EneMap AI | 系統用蓄電池・太陽光発電の事業用地探し・土地選定ツール</title>
+    <meta name="description" content="系統用蓄電池や太陽光発電の事業用地探しをAIとGISデータで自動化。平坦・接道・民家からの離隔条件を瞬時にスクリーニングし、デベロッパーやEPCの用地開発における現地調査とアナログな地図確認作業のコストを劇的に削減します。">
+    <meta name="keywords" content="系統用蓄電池, 太陽光発電, 用地探し, 土地探し, 再生可能エネルギー, デベロッパー, EPC, GIS, 自動スクリーニング, EneMap AI">
+    <meta name="author" content="Green Battery Project">
+    <link rel="canonical" href="https://enemap-lp.vercel.app/">
+    
+    <!-- アイコン設定 (favicon) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔋</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔋</text></svg>">
+    <meta name="apple-mobile-web-app-title" content="EneMap AI">
+
+    <!-- OGP (SNSシェア時の表示設定) -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://enemap-lp.vercel.app/">
+    <meta property="og:title" content="EneMap AI | 系統用蓄電池・太陽光発電の事業用地探索ツール">
+    <meta property="og:description" content="AIとGISデータで、平坦・接道・民家離隔など厳しい条件を満たす極上の事業用地を瞬時に発掘。用地開発のボトルネックを解消します。">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1200&auto=format&fit=crop">
+    <meta property="og:site_name" content="EneMap AI">
+    <meta property="og:locale" content="ja_JP">
+
+    <!-- Twitterカード -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="EneMap AI | 系統用蓄電池・太陽光発電の事業用地探索ツール">
+    <meta name="twitter:description" content="AIとGISデータで、平坦・接道・民家離隔など厳しい条件を満たす極上の事業用地を瞬時に発掘。">
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1200&auto=format&fit=crop">
+
+    <!-- 構造化データ (JSON-LD) - Google検索エンジン向け -->
+    <script type="application/ld+json">
+    [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "EneMap AI",
+        "url": "https://enemap-lp.vercel.app/"
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "EneMap AI",
+        "operatingSystem": "Web",
+        "applicationCategory": "BusinessApplication",
+        "description": "系統用蓄電池や太陽光発電の事業用地探しをAIとGISデータで自動化するツール。平坦・接道・民家離隔条件を瞬時にスクリーニングします。",
+        "offers": {
+          "@type": "Offer",
+          "price": "50000",
+          "priceCurrency": "JPY"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "ratingCount": "24"
+        }
+      }
+    ]
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-bg {
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.15) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.15) 0%, transparent 50%);
+        }
+    </style>
+</head>
+<body class="font-sans text-gray-800 bg-gray-50">
+
+    <!-- Header -->
+    <header class="fixed w-full bg-white/90 backdrop-blur-md shadow-sm z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-leaf text-emerald-500"></i> EneMap AI
+            </div>
+            <nav class="hidden md:flex space-x-8">
+                <a href="#features" class="text-gray-600 hover:text-emerald-600 font-medium">機能・特徴</a>
+                <a href="#problems" class="text-gray-600 hover:text-emerald-600 font-medium">解決する課題</a>
+                <a href="#pricing" class="text-gray-600 hover:text-emerald-600 font-medium">料金プラン</a>
+            </nav>
+            <a href="#contact" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-full font-bold transition-colors shadow-lg shadow-emerald-500/30">
+                無料トライアル
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-bg pt-32 pb-20 md:pt-40 md:pb-32 text-white">
+        <div class="container mx-auto px-6 text-center">
+            <div class="inline-block bg-emerald-500/20 border border-emerald-500/30 rounded-full px-4 py-1.5 text-emerald-400 font-semibold text-sm mb-6">
+                <i class="fa-solid fa-bolt mr-2"></i> 系統用蓄電池・太陽光発電の用地開発を加速
+            </div>
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+                アナログな地図確認はもう終わり。<br>
+                <span class="gradient-text">AIが「極上の事業用地」を1秒で発掘。</span>
+            </h1>
+            <p class="text-xl md:text-2xl text-gray-400 mb-10 max-w-3xl mx-auto leading-relaxed">
+                傾斜角、民家からの離隔、接道状況。これまでは人が数日かけて調べていた条件を、<br class="hidden md:block">
+                EneMap AIなら全国のGISデータから瞬時にスクリーニングします。
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#contact" class="bg-emerald-600 hover:bg-emerald-500 text-white text-lg px-8 py-4 rounded-full font-bold transition-all transform hover:scale-105 shadow-lg shadow-emerald-500/40">
+                    無料で1週間試してみる
+                </a>
+                <a href="#features" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white text-lg px-8 py-4 rounded-full font-bold transition-all">
+                    機能について詳しく
+                </a>
+            </div>
+            
+            <!-- Mockup Image -->
+            <div class="mt-16 relative max-w-5xl mx-auto">
+                <div class="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-transparent to-transparent z-10"></div>
+                <div class="rounded-xl overflow-hidden shadow-2xl border border-gray-800 bg-gray-900 p-2">
+                    <div class="flex items-center gap-2 mb-2 px-2">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg aspect-video flex items-center justify-center relative overflow-hidden">
+                        <!-- Pseudo Dashboard Content -->
+                        <div class="absolute inset-0 opacity-30" style="background-image: url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=2074&auto=format&fit=crop'); background-size: cover; background-position: center;"></div>
+                        <div class="z-10 text-center">
+                            <i class="fa-solid fa-radar text-6xl text-emerald-500 mb-4 animate-spin-slow"></i>
+                            <h3 class="text-2xl font-mono text-emerald-400">> AI GEOSPATIAL ANALYSIS</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problems Section -->
+    <section id="problems" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">用地開発の「ボトルネック」になっていませんか？</h2>
+                <p class="text-xl text-gray-600">系統用蓄電池の事業用地探しには、特有の厳しい条件とアナログな苦労が伴います。</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-gray-50 p-8 rounded-2xl border border-gray-100">
+                    <div class="w-14 h-14 bg-red-100 text-red-600 rounded-xl flex items-center justify-center text-2xl mb-6">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Google Earthと睨めっこ</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        「ここは平坦か？」「家は近いか？」担当者が1件ずつ地図を見て確認。膨大な時間が奪われ、本来の交渉業務が進みません。
+                    </p>
+                </div>
+                <div class="bg-gray-50 p-8 rounded-2xl border border-gray-100">
+                    <div class="w-14 h-14 bg-red-100 text-red-600 rounded-xl flex items-center justify-center text-2xl mb-6">
+                        <i class="fa-solid fa-truck"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">現地に行ったら「接道なし」</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        苦労して見つけた土地も、いざ現地調査に行くと「道幅が狭くてクレーン車が入らない」と判明し、コストと時間が無駄に。
+                    </p>
+                </div>
+                <div class="bg-gray-50 p-8 rounded-2xl border border-gray-100">
+                    <div class="w-14 h-14 bg-red-100 text-red-600 rounded-xl flex items-center justify-center text-2xl mb-6">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">騒音リスク（PCSの音）</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        蓄電池事業特有の悩みである「PCSの騒音」。民家との距離（50m以上など）を正確に測れず、近隣トラブルのリスクを抱えます。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-gray-50 border-y border-gray-200">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">EneMap AI が圧倒的な「歩留まり」を実現</h2>
+                <p class="text-xl text-gray-600">高度なGISデータとAIアルゴリズムが、条件に合致する「本物の」候補地だけを抽出します。</p>
+            </div>
+
+            <div class="flex flex-col md:flex-row items-center gap-12 mb-20">
+                <div class="md:w-1/2">
+                    <div class="bg-white p-2 rounded-2xl shadow-xl border border-gray-100 transform -rotate-2">
+                        <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=800&auto=format&fit=crop" alt="Map View" class="rounded-xl opacity-80">
+                    </div>
+                </div>
+                <div class="md:w-1/2">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-semibold text-sm mb-4">
+                        <i class="fa-solid fa-mountain"></i> 造成コスト削減
+                    </div>
+                    <h3 class="text-3xl font-bold mb-4">傾斜角の自動計算</h3>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        国土地理院の標高データ（DEM）を活用し、対象エリアの平均傾斜角を自動算出。「5度以下（平坦）」など、造成工事が不要な土地だけをピンポイントで探し出します。
+                    </p>
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-500"></i> 最大傾斜条件の設定（2.5度、5.0度、10.0度）</li>
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-500"></i> 高度な標高メッシュ解析アルゴリズム</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row-reverse items-center gap-12 mb-20">
+                <div class="md:w-1/2">
+                    <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 transform rotate-1">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center border-b pb-4">
+                                <span class="font-bold text-gray-700">対象地ID: 8934</span>
+                                <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-sm">条件クリア</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">民家からの距離</span>
+                                <span class="font-bold">65.2m <i class="fa-solid fa-circle-check text-emerald-500 ml-1"></i></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">道路からの距離</span>
+                                <span class="font-bold">2.1m <i class="fa-solid fa-circle-check text-emerald-500 ml-1"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:w-1/2">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm mb-4">
+                        <i class="fa-solid fa-house-circle-exclamation"></i> リスク回避
+                    </div>
+                    <h3 class="text-3xl font-bold mb-4">民家離隔・接道の自動判定</h3>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        地図上の建物ポリゴン・道路ポリゴンと対象地の距離を計算。「民家から50m以上離れている」「道路から10m以内（接道している）」といった厳しい条件を満たす土地のみをフィルタリングします。
+                    </p>
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-500"></i> 騒音クレームリスクの排除（民家離隔30m/50m/100m）</li>
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-500"></i> 搬入ルートの確保（道路離隔距離判定）</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row items-center gap-12">
+                <div class="md:w-1/2">
+                    <div class="bg-white p-2 rounded-2xl shadow-xl border border-gray-100">
+                         <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 text-center">
+                             <i class="fa-solid fa-file-signature text-5xl text-gray-400 mb-4"></i>
+                             <p class="font-bold text-gray-700 mb-2">登記情報 ワンクリック照会</p>
+                             <p class="text-sm text-gray-500">API経由で地番・地目・所有者を一括取得</p>
+                         </div>
+                    </div>
+                </div>
+                <div class="md:w-1/2">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 font-semibold text-sm mb-4">
+                        <i class="fa-solid fa-magnifying-glass"></i> 次のステップへ直結
+                    </div>
+                    <h3 class="text-3xl font-bold mb-4">登記情報のワンクリック取得</h3>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        条件に合う土地が見つかったら、ボタン一つで登記情報（地番・地目・所有者）をAPI経由で取得可能。法務局に行く手間や、別サービスで座標を変換する手間を省き、すぐに地権者へのアプローチを開始できます。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">投資を上回る、圧倒的なリターンを。</h2>
+                <p class="text-xl text-gray-600">人件費の削減と、優良案件のソーシング加速により、すぐにペイする価格設定です。</p>
+            </div>
+
+            <div class="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
+                <!-- Pro Plan -->
+                <div class="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm hover:shadow-xl transition-shadow relative flex flex-col">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Pro プラン</h3>
+                    <p class="text-gray-500 mb-6">地場の不動産業者、中小EPC事業者向け</p>
+                    <div class="mb-6">
+                        <span class="text-4xl font-extrabold text-gray-900">¥50,000</span>
+                        <span class="text-gray-500">/月 (1ユーザー)</span>
+                    </div>
+                    <ul class="space-y-4 mb-8 flex-1">
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-emerald-500 mt-1"></i> <span>全国の事業用地 AIスクリーニング</span></li>
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-emerald-500 mt-1"></i> <span>傾斜・民家離隔・接道の自動判定</span></li>
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-emerald-500 mt-1"></i> <span>AIスキャン解像度：標準（60地点）</span></li>
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-emerald-500 mt-1"></i> <span>登記情報取得：従量課金（500円/件）</span></li>
+                    </ul>
+                    <a href="#contact" class="block text-center w-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold py-3 rounded-xl transition-colors border border-emerald-200">
+                        1週間 無料トライアル
+                    </a>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="bg-gray-900 border border-gray-800 rounded-3xl p-8 shadow-2xl relative flex flex-col text-white transform md:-translate-y-4">
+                    <div class="absolute top-0 right-8 transform -translate-y-1/2">
+                        <span class="bg-gradient-to-r from-emerald-400 to-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Most Popular</span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2 text-white">Enterprise プラン</h3>
+                    <p class="text-gray-400 mb-6">大手デベロッパー、投資ファンド向け</p>
+                    <div class="mb-6">
+                        <span class="text-4xl font-extrabold text-white">¥150,000<span class="text-2xl">〜</span></span>
+                        <span class="text-gray-400">/月 (チーム利用)</span>
+                    </div>
+                    <ul class="space-y-4 mb-8 flex-1">
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> <span class="text-gray-300">Proプランのすべての機能</span></li>
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> <span class="text-gray-300">AIスキャン解像度：詳細・徹底モード解放（最大300地点）</span></li>
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> <span class="text-gray-300">登記情報一括取得（割引レート）</span></li>
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> <span class="text-gray-300">専任サポート・オンボーディング</span></li>
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> <span class="text-gray-300">年間一括払い割引（1,500,000円/年）</span></li>
+                    </ul>
+                    <a href="#contact" class="block text-center w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-emerald-500/30">
+                        お問い合わせ・デモ予約
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA / Contact Section -->
+    <section id="contact" class="py-20 bg-emerald-50 border-t border-emerald-100">
+        <div class="container mx-auto px-6 max-w-4xl bg-white p-10 md:p-14 rounded-3xl shadow-xl border border-gray-100">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">まずは圧倒的な「時短」を体感してください</h2>
+                <p class="text-gray-600">御社が現在探している「ターゲットエリア」をヒアリングし、実際のデータを用いた無料デモを実施します。</p>
+            </div>
+
+            <form class="space-y-6" action="https://formspree.io/f/xojyreeg" method="POST">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">会社名</label>
+                        <input type="text" name="company" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all" placeholder="株式会社〇〇" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">ご担当者名</label>
+                        <input type="text" name="name" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all" placeholder="山田 太郎" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">メールアドレス</label>
+                    <input type="email" name="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all" placeholder="yamada@example.com" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">ご要望（無料トライアル希望、デモ希望など）</label>
+                    <select name="request_type" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all bg-white">
+                        <option value="無料トライアル希望">無料トライアル（1週間）を希望</option>
+                        <option value="オンラインデモ希望">オンラインデモ・詳しい説明を希望</option>
+                        <option value="料金プラン相談">料金プランについての相談</option>
+                        <option value="その他">その他のお問い合わせ</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-4 rounded-xl transition-colors shadow-lg text-lg">
+                    無料トライアル・デモを申し込む
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-12 border-t border-gray-800">
+        <div class="container mx-auto px-6 text-center">
+            <div class="text-2xl font-bold text-white mb-6 flex justify-center items-center gap-2">
+                <i class="fa-solid fa-leaf text-emerald-500"></i> EneMap AI
+            </div>
+            <p class="mb-6 text-sm">系統用蓄電池および再生可能エネルギーの用地開発を、AIとGIS技術で革新します。</p>
+            <div class="flex justify-center space-x-6 mb-8">
+                <a href="#" class="hover:text-white transition-colors">運営会社</a>
+                <a href="#" class="hover:text-white transition-colors">利用規約</a>
+                <a href="#" class="hover:text-white transition-colors">プライバシーポリシー</a>
+            </div>
+            <p class="text-xs text-gray-600">&copy; 2026 EneMap AI (Green Battery Project). All rights reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+# GIS & Analysis
+geopandas>=0.14.0
+shapely>=2.0.0
+pyproj>=3.6.0
+pyogrio>=0.7.2
+pyarrow>=14.0.0
+numpy>=1.24.0
+
+# Backend & API
+fastapi>=0.104.0
+uvicorn>=0.23.2
+pydantic[email]>=2.4.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0
+python-multipart>=0.0.6
+stripe>=7.0.0
+
+# Automation & Scraping
+playwright>=1.40.0
+requests>=2.31.0
+
+# Image & Geometry
+Pillow>=10.0.0
+
+# Google Drive DB download
+gdown>=5.1.0
+osmnx>=1.9.0

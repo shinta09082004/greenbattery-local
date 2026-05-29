@@ -1,0 +1,20 @@
+{
+  "name": "Green Battery",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "postCreateCommand": "pip install -r requirements.txt && bash scripts/download_db.sh",
+  "onCreateCommand": "echo 'フルデータが必要な場合は: bash scripts/download_all_data.sh'",
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": {
+      "label": "API Server",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python"
+      ]
+    }
+  }
+}

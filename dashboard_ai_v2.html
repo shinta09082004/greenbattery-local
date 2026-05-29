@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EneMap AI - Ver.AI (Update 2)</title>
+
+    <!-- アイコン設定 (favicon) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔋</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔋</text></svg>">
+    <meta name="apple-mobile-web-app-title" content="EneMap AI">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <style>
+        body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; background: #f4f7f6; color: #333; }
+        header { background: #1a202c; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1001; }
+        .logo { font-size: 1.5rem; font-weight: bold; color: #48bb78; }
+        .ver-tag { font-size: 0.7rem; background: #4299e1; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+        .search-bar { display: flex; gap: 10px; align-items: center; background: #2d3748; padding: 5px 15px; border-radius: 8px; }
+        
+        main { display: flex; flex: 1; overflow: hidden; }
+        #sidebar { width: 350px; background: white; border-right: 1px solid #e2e8f0; overflow-y: auto; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 15px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+        .candidate-card { padding: 15px; border-bottom: 1px solid #edf2f7; cursor: pointer; transition: background 0.2s; }
+        .candidate-card:hover { background: #f0fff4; }
+        .candidate-card.active { border-left: 4px solid #48bb78; background: #f0fff4; }
+        .tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; margin-right: 4px; }
+        .tag-success { background: #c6f6d5; color: #22543d; }
+        
+        #map-container { flex: 1; position: relative; display: flex; flex-direction: column; }
+        #map { flex: 1; min-height: 0; width: 100%; }
+
+        /* Layer Checkbox Panel */
+        #layer-panel {
+            background: rgba(26,32,44,0.93);
+            border-top: 1px solid #4a5568;
+            padding: 7px 16px;
+            z-index: 900;
+            backdrop-filter: blur(4px);
+            flex-shrink: 0;
+        }
+        .layer-panel-inner {
+            display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center;
+        }
+        .layer-panel-title {
+            font-size: 0.72rem; color: #a0aec0; font-weight: bold; margin-right: 4px; white-space: nowrap;
+        }
+        .layer-cb {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 0.78rem; color: #e2e8f0; cursor: pointer; white-space: nowrap;
+            padding: 2px 7px; border-radius: 4px; transition: background 0.15s; user-select: none;
+        }
+        .layer-cb:hover { background: rgba(255,255,255,0.09); }
+        .layer-cb input[type=checkbox] { width: 13px; height: 13px; accent-color: #48bb78; cursor: pointer; flex-shrink: 0; }
+        .layer-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+        
+        .info-panel { position: absolute; bottom: 20px; right: 20px; z-index: 1000; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 320px; display: none; }
+        .btn-primary { background: #48bb78; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn-primary:hover { background: #38a169; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); z-index: 2000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; width: 800px; max-width: 95%; height: 80vh;
+            border-radius: 12px; display: flex; flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); overflow: hidden;
+        }
+        .modal-header {
+            background: #1a202c; color: white; padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-body {
+            padding: 20px; overflow-y: auto; flex: 1; background: #f8fafc;
+        }
+        .region-group { margin-bottom: 20px; }
+        .region-title { font-weight: bold; color: #4a5568; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; }
+        .pref-grid, .city-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+        .city-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+        .area-btn {
+            background: white; border: 1px solid #cbd5e0; padding: 10px;
+            border-radius: 6px; text-align: center; cursor: pointer;
+            transition: all 0.2s; color: #2d3748; font-size: 0.9rem;
+        }
+        .area-btn:hover { background: #ebf8ff; border-color: #4299e1; color: #2b6cb0; }
+        
+        /* AI Radar Scanner Animation */
+        .radar-scanner {
+            position: relative; width: 100px; height: 100px;
+            border-radius: 50%; border: 2px solid rgba(72, 187, 120, 0.3);
+            background: rgba(72, 187, 120, 0.05); overflow: hidden;
+            margin-bottom: 20px; box-shadow: 0 0 15px rgba(72, 187, 120, 0.2);
+        }
+        .radar-scanner::before {
+            content: ""; position: absolute; top: 0; left: 50%;
+            width: 50px; height: 50px; transform-origin: 0% 100%;
+            background: linear-gradient(90deg, rgba(72, 187, 120, 0.8) 0%, transparent 100%);
+            animation: radar-spin 2s linear infinite;
+        }
+        .radar-scanner::after {
+            content: ""; position: absolute; top: 50%; left: 50%; width: 2px; height: 100%; background: rgba(72, 187, 120, 0.3); transform: translate(-50%, -50%);
+        }
+        .radar-scanner-h {
+            position: absolute; top: 50%; left: 50%; width: 100%; height: 2px; background: rgba(72, 187, 120, 0.3); transform: translate(-50%, -50%); z-index: 1;
+        }
+        .radar-dot {
+            position: absolute; width: 4px; height: 4px; background: #fff; border-radius: 50%; z-index: 2;
+            box-shadow: 0 0 4px #fff, 0 0 8px #48bb78; opacity: 0; animation: dot-blink 2s infinite;
+        }
+        @keyframes radar-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes dot-blink { 0%, 100% { opacity: 0; } 50% { opacity: 1; transform: scale(1.5); } }
+        
+        .loading-steps { font-family: monospace; }
+        .step-item { margin-bottom: 8px; display: flex; align-items: center; gap: 10px; transition: color 0.3s; }
+        .step-icon {
+            width: 16px; height: 16px; border: 1px solid #a0aec0; border-radius: 50%;
+            display: inline-flex; justify-content: center; align-items: center; font-size: 10px;
+        }
+        .step-active { color: #48bb78; text-shadow: 0 0 5px rgba(72, 187, 120, 0.5); }
+        .step-active .step-icon { border-color: #48bb78; background: #48bb78; color: #1a202c; box-shadow: 0 0 8px #48bb78; }
+        .step-done { color: #cbd5e0; }
+        .step-done .step-icon { border-color: #48bb78; background: transparent; color: #48bb78; }
+
+        .ai-eval-box { background: #f0f9ff; border: 1px solid #bae6fd; padding: 12px; border-radius: 8px; margin-top: 15px; }
+        .ai-title { color: #0369a1; font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+        
+        /* Mode Tabs */
+        .mode-tabs { display: flex; gap: 6px; }
+        .mode-tab {
+            background: #2d3748; color: #a0aec0; border: 1px solid #4a5568;
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .mode-tab:hover { background: #4a5568; color: white; }
+        .mode-tab.active { background: #48bb78; color: white; border-color: #48bb78; }
+
+        /* Self Search Sidebar */
+
+        /* Map click cursor in self mode */
+        .map-self-mode { cursor: crosshair !important; }
+
+        /* Modern Select Styles */
+        .modern-select {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1rem;
+            color: #2d3748;
+            background-color: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            appearance: none;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23a0aec0" viewBox="0 0 16 16"><path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 12px;
+        }
+        .modern-select:hover {
+            border-color: #cbd5e0;
+            background-color: #fff;
+        }
+        .modern-select:focus {
+            border-color: #48bb78;
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">ENEMAP AI <span class="ver-tag">Ver.AI Update 2</span></div>
+        <div class="mode-tabs">
+            <button id="tab-ai" class="mode-tab active" onclick="setMode('ai')">🤖 AI探索</button>
+            <button id="tab-self" class="mode-tab" onclick="setMode('self')">🔍 セルフ探索</button>
+        </div>
+        <div id="ai-controls" class="search-bar">
+            <button class="btn-primary" style="margin:0; width:auto; padding:8px 15px; display:flex; align-items:center; gap:5px;" onclick="openModal()">
+                住所から探す
+            </button>
+            <div style="width: 1px; height: 20px; background: #4a5568; margin: 0 10px;"></div>
+            <button class="btn-primary" style="margin:0; width:auto; padding:5px 15px; background:#4a5568;" onclick="openConditionModal()">⚙️ 検索条件設定</button>
+            <button class="btn-primary" style="margin:0; width:auto; padding:5px 15px;" onclick="searchCandidates()">🔍 AI検索開始</button>
+        </div>
+        <div id="self-controls" style="display:none;">
+            <div class="search-bar">
+                <button class="btn-primary" style="margin:0; width:auto; padding:8px 15px;" onclick="openModal()">📍 住所から移動</button>
+                <span style="color:#a0aec0; font-size:0.8rem; margin-left:10px;">地図をクリックして住所・座標を確認</span>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span id="user-email" style="color: #cbd5e0; margin-right: 5px; font-size: 0.9rem;"></span>
+            <button id="admin-btn" style="display:none; background:none; border:1px solid #718096; color:#a0aec0; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.85rem;" onclick="openAdminModal()">⚙ 管理</button>
+            <button id="logout-btn" style="background:none; border:1px solid #4a5568; color:white; padding:5px 10px; border-radius:4px; cursor:pointer; display:none;" onclick="logout()">ログアウト</button>
+        </div>
+    </header>
+
+    <main id="main-content" style="display:none;">
+        <div id="sidebar">
+
+            <!-- 候補地リスト -->
+            <div class="sidebar-header">
+                <div style="font-weight:bold; font-size:1.1rem;"><span id="mode-label">Ver.AI</span> 候補地リスト (<span id="count">0</span>件)</div>
+                <div style="font-size:0.8rem; color:#718096;">現在表示中のエリア内</div>
+            </div>
+            <div id="list-container"></div>
+        </div>
+
+        <div id="map-container">
+            <div id="map"></div>
+            <div class="info-panel" id="parcel-info"></div>
+            <div id="layer-panel">
+                <div class="layer-panel-inner">
+                    <span class="layer-panel-title">🗺 表示レイヤー</span>
+                    <label class="layer-cb"><input type="checkbox" data-layer="slope"><span class="layer-dot" style="background:#f97316"></span>傾斜量</label>
+                    <label class="layer-cb"><input type="checkbox" data-layer="landuse"><span class="layer-dot" style="background:#22c55e"></span>農地（土地利用）</label>
+                    <label class="layer-cb"><input type="checkbox" data-layer="admin"><span class="layer-dot" style="background:#3b82f6"></span>行政区画</label>
+                    <label class="layer-cb"><input type="checkbox" data-layer="flood"><span class="layer-dot" style="background:#06b6d4"></span>洪水浸水想定区域</label>
+                    <label class="layer-cb"><input type="checkbox" data-layer="landslide"><span class="layer-dot" style="background:#ef4444"></span>土砂災害警戒区域（土石流）</label>
+                    <label class="layer-cb" title="外部サービス変更により現在利用不可"><input type="checkbox" data-layer="forest_protected"><span class="layer-dot" style="background:#94a3b8"></span>保安林 <span style="font-size:10px;background:#7c3aed;color:#fff;border-radius:3px;padding:1px 4px;margin-left:2px;">外部連携停止</span></label>
+                    <label class="layer-cb"><input type="checkbox" data-layer="agri_zone"><span class="layer-dot" style="background:#1e3a8a"></span>農業振興地域（青地）</label>
+                    <label class="layer-cb"><input type="checkbox" data-layer="white_zone"><span class="layer-dot" style="background:#a855f7"></span>農地（白地）</label>
+                    <label class="layer-cb"><input type="checkbox" data-layer="fude"><span class="layer-dot" style="background:#a855f7"></span>筆界</label>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="loading-overlay" class="modal-overlay" style="z-index: 3000; flex-direction: column; color: white; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); display: none;">
+        <div class="radar-scanner">
+            <div class="radar-scanner-h"></div>
+            <div class="radar-dot" style="top: 25%; left: 35%; animation-delay: 0.1s;"></div>
+            <div class="radar-dot" style="top: 70%; left: 65%; animation-delay: 0.9s;"></div>
+            <div class="radar-dot" style="top: 40%; left: 80%; animation-delay: 1.5s;"></div>
+        </div>
+        <h2 style="margin: 10px 0 5px; font-family: monospace; font-size: 1.4rem; letter-spacing: 1px; color: #48bb78; text-shadow: 0 0 10px rgba(72,187,120,0.4);">
+            > AI 地理空間分析
+        </h2>
+        <p style="color: #a0aec0; margin-bottom: 20px; font-size: 0.9rem;">地形パラメータを解析しています...</p>
+        
+        <div class="loading-steps" style="width: 320px; font-size: 0.9rem;">
+            <div class="step-item" id="step1">
+                <span class="step-icon"></span> <span class="step-text">GIS・標高データを取得中</span>
+            </div>
+            <div class="step-item" id="step2">
+                <span class="step-icon"></span> <span class="step-text">地形の傾斜角を計算中</span>
+            </div>
+            <div class="step-item" id="step3">
+                <span class="step-icon"></span> <span class="step-text">道路へのアクセス性を確認中</span>
+            </div>
+            <div class="step-item" id="step4">
+                <span class="step-icon"></span> <span class="step-text">条件に適合する区画を特定中</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 検索条件設定モーダル -->
+    <div id="condition-modal" class="modal-overlay" onclick="closeConditionModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()" style="width: 550px; height: auto; background: #f8fafc;">
+            <div class="modal-header" style="background: white; color: #1a202c; border-bottom: 1px solid #e2e8f0; padding: 20px 25px;">
+                <h3 style="margin:0; font-size:1.3rem; display: flex; align-items: center; gap: 8px;">⚙️ AI探索条件の設定</h3>
+                <button onclick="closeConditionModal(true)" style="background:none; border:none; color:#a0aec0; font-size:1.8rem; line-height: 1; cursor:pointer; transition: color 0.2s;" onmouseover="this.style.color='#4a5568'" onmouseout="this.style.color='#a0aec0'">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 25px;">
+                <div class="condition-item" style="margin-bottom: 20px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+                    <label style="font-weight:bold; color:#2d3748; display:block; margin-bottom:12px; font-size:1rem;">
+                        許容する最大傾斜 
+                        <span style="font-weight:normal; color:#718096; font-size:0.8rem; margin-left:8px; display:inline-block;">造成コストに直結します</span>
+                    </label>
+                    <select id="cond-slope" class="modern-select">
+                        <option value="2.5">2.5度 (超平坦・工事不要)</option>
+                        <option value="5.0" selected>5.0度 (平坦・標準)</option>
+                        <option value="10.0">10.0度 (やや傾斜・造成許容)</option>
+                    </select>
+                </div>
+                <div class="condition-item" style="margin-bottom: 20px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+                    <label style="font-weight:bold; color:#2d3748; display:block; margin-bottom:12px; font-size:1rem;">
+                        民家からの最低離隔 
+                        <span style="font-weight:normal; color:#718096; font-size:0.8rem; margin-left:8px; display:inline-block;">騒音トラブルを防ぐための距離</span>
+                    </label>
+                    <select id="cond-bldg" class="modern-select">
+                        <option value="30">30m以上 (最低限の配慮)</option>
+                        <option value="50" selected>50m以上 (標準的な距離)</option>
+                        <option value="100">100m以上 (完全な隔離)</option>
+                    </select>
+                </div>
+                <div class="condition-item" style="margin-bottom: 20px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+                    <label style="font-weight:bold; color:#2d3748; display:block; margin-bottom:12px; font-size:1rem;">
+                        道路からの最大離隔 
+                        <span style="font-weight:normal; color:#718096; font-size:0.8rem; margin-left:8px; display:inline-block;">搬入・接続のしやすさ</span>
+                    </label>
+                    <select id="cond-road" class="modern-select">
+                        <option value="10" selected>10m以内 (完全接道)</option>
+                        <option value="20">20m以内 (敷地内延長可能)</option>
+                        <option value="50">50m以内 (近くにあればOK)</option>
+                    </select>
+                </div>
+                <div class="condition-item" style="margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+                    <label style="font-weight:bold; color:#2d3748; display:block; margin-bottom:12px; font-size:1rem;">
+                        AIスキャン解像度 
+                        <span style="font-weight:normal; color:#718096; font-size:0.8rem; margin-left:8px; display:inline-block;">探索の精密さ（ポイント数）</span>
+                    </label>
+                    <select id="cond-points" class="modern-select">
+                        <option value="60" selected>60地点 (高速・標準モード)</option>
+                        <option value="150">150地点 (詳細モード・少々時間がかかります)</option>
+                        <option value="300">300地点 (徹底探索モード・時間がかかります)</option>
+                    </select>
+                </div>
+                <button class="btn-primary" style="padding:16px; font-size:1.1rem; width:100%; border-radius:10px; box-shadow: 0 4px 6px rgba(72,187,120,0.2); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(72,187,120,0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(72,187,120,0.2)'" onclick="closeConditionModal(true)">
+                    設定を保存して探索に適用
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 認証モーダル -->
+    <div id="auth-modal" class="modal-overlay" style="display: flex;">
+        <div class="modal-content" style="width: 400px; height: auto; padding: 30px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 id="auth-title" style="margin:0; color: #1a202c;">EneMap AI Ver.AI</h2>
+                <p style="color: #718096; font-size: 0.9rem;">次世代土地探索プラットフォーム</p>
+            </div>
+            <div class="auth-form" onsubmit="return false;">
+                <input type="email" id="auth-email" class="auth-input" placeholder="メールアドレス" value="admin@example.com">
+                <input type="password" id="auth-password" class="auth-input" placeholder="パスワード" value="password123">
+                <button class="btn-primary" style="padding: 12px;" onclick="handleAuth()" id="auth-submit-btn">ログイン</button>
+                <div style="text-align:center; font-size:0.85rem; color:#718096; cursor:pointer; margin-top: 10px;" onclick="toggleAuthMode()" id="auth-toggle-text">
+                    アカウントをお持ちでない方はこちら（新規登録）
+                </div>
+                <div id="auth-error" style="color:red; font-size:0.8rem; text-align:center; display:none; margin-top: 10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 住所選択モーダル -->
+    <div id="address-modal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modal-title" style="margin:0; font-size:1.2rem;">都道府県を選択してください</h3>
+                <button onclick="closeModal(true)" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- 管理モーダル -->
+    <div id="admin-modal" class="modal-overlay" onclick="closeAdminModal(event)">
+        <div class="modal-content" style="width:900px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span style="font-size:1.1rem; font-weight:bold;">⚙ 管理画面 — ログイン履歴</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <input type="text" id="admin-email-filter" placeholder="メールで絞り込み"
+                        style="padding:6px 10px; border-radius:4px; border:1px solid #4a5568; background:#2d3748; color:white; font-size:0.85rem; width:220px;"
+                        onkeydown="if(event.key==='Enter') fetchLoginHistory()">
+                    <button onclick="fetchLoginHistory()" style="background:#4a5568; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">検索</button>
+                    <button onclick="closeAdminModal(true)" style="background:none; border:none; color:white; font-size:1.4rem; cursor:pointer; line-height:1;">&times;</button>
+                </div>
+            </div>
+            <div style="overflow-y:auto; flex:1; background:#f8fafc;">
+                <div id="admin-history-body" style="padding:16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('gb_token');
+        let authMode = 'login';
+        let isAdmin = false;
+        let isSubscribed = false;
+        let currentMode = 'ai';
+
+        window.onload = function() {
+            if (authToken) { checkSubscriptionAndShow(); } else { showLogin(); }
+        };
+
+        function showLogin() {
+            document.getElementById('auth-modal').style.display = 'flex';
+            document.getElementById('main-content').style.display = 'none';
+        }
+
+        async function checkSubscriptionAndShow() {
+            try {
+                const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${authToken}` } });
+                if (res.status === 401) { logout(); return; }
+                const user = await res.json();
+                isSubscribed = user.is_subscribed;
+                isAdmin = user.is_admin || false;
+                localStorage.setItem('gb_email', user.email);
+                showApp();
+            } catch (e) { showLogin(); }
+        }
+
+        function showApp() {
+            document.getElementById('auth-modal').style.display = 'none';
+            document.getElementById('main-content').style.display = 'flex';
+            document.getElementById('logout-btn').style.display = 'inline-block';
+            document.getElementById('user-email').innerText = (isSubscribed ? "⭐ Pro会員: " : "") + localStorage.getItem('gb_email');
+            if (isAdmin) document.getElementById('admin-btn').style.display = 'inline-block';
+            initMap();
+        }
+
+        function logout() {
+            localStorage.removeItem('gb_token');
+            localStorage.removeItem('gb_email');
+            location.reload();
+        }
+
+        function openAdminModal() {
+            document.getElementById('admin-modal').style.display = 'flex';
+            fetchLoginHistory();
+        }
+
+        function closeAdminModal(force) {
+            if (force || (event && event.target.id === 'admin-modal')) {
+                document.getElementById('admin-modal').style.display = 'none';
+            }
+        }
+
+        async function fetchLoginHistory() {
+            const emailFilter = document.getElementById('admin-email-filter').value.trim();
+            const url = '/api/admin/login-history-jwt' + (emailFilter ? `?email=${encodeURIComponent(emailFilter)}&limit=200` : '?limit=200');
+            const body = document.getElementById('admin-history-body');
+            body.innerHTML = '<p style="color:#718096; text-align:center;">読み込み中...</p>';
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                if (!res.ok) { body.innerHTML = '<p style="color:red; text-align:center;">取得に失敗しました</p>'; return; }
+                const rows = await res.json();
+                if (rows.length === 0) { body.innerHTML = '<p style="color:#718096; text-align:center;">履歴がありません</p>'; return; }
+                let html = `<table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                    <thead><tr style="background:#edf2f7; text-align:left;">
+                        <th style="padding:10px 12px; border-bottom:2px solid #e2e8f0;">日時</th>
+                        <th style="padding:10px 12px; border-bottom:2px solid #e2e8f0;">メールアドレス</th>
+                        <th style="padding:10px 12px; border-bottom:2px solid #e2e8f0;">結果</th>
+                        <th style="padding:10px 12px; border-bottom:2px solid #e2e8f0;">IPアドレス</th>
+                    </tr></thead><tbody>`;
+                rows.forEach((r, i) => {
+                    const bg = i % 2 === 0 ? 'white' : '#f7fafc';
+                    const badge = r.success
+                        ? '<span style="background:#c6f6d5; color:#276749; padding:2px 8px; border-radius:9999px; font-size:0.8rem;">✓ 成功</span>'
+                        : '<span style="background:#fed7d7; color:#9b2c2c; padding:2px 8px; border-radius:9999px; font-size:0.8rem;">✗ 失敗</span>';
+                    html += `<tr style="background:${bg};">
+                        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; color:#4a5568;">${r.logged_at}</td>
+                        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0;">${r.email}</td>
+                        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0;">${badge}</td>
+                        <td style="padding:9px 12px; border-bottom:1px solid #e2e8f0; color:#718096; font-family:monospace;">${r.ip_address || '-'}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                body.innerHTML = html;
+            } catch (e) {
+                body.innerHTML = '<p style="color:red; text-align:center;">通信エラー</p>';
+            }
+        }
+
+        function toggleAuthMode() {
+            authMode = (authMode === 'login') ? 'register' : 'login';
+            document.getElementById('auth-title').innerText = (authMode === 'login') ? 'EneMap AI Ver.AI' : '新規アカウント作成';
+            document.getElementById('auth-submit-btn').innerText = (authMode === 'login') ? 'ログイン' : '会員登録';
+            document.getElementById('auth-toggle-text').innerText = (authMode === 'login') ? 'アカウントをお持ちでない方はこちら（新規登録）' : 'すでにアカウントをお持ちの方はこちら';
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const errorDiv = document.getElementById('auth-error');
+            errorDiv.style.display = 'none';
+            try {
+                if (authMode === 'register') {
+                    const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+                    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || '登録失敗'); }
+                    alert('登録完了'); toggleAuthMode();
+                } else {
+                    const formData = new FormData();
+                    formData.append('username', email);
+                    formData.append('password', password);
+                    const res = await fetch('/api/auth/token', { method: 'POST', body: formData });
+                    if (!res.ok) throw new Error('ログイン失敗');
+                    const data = await res.json();
+                    authToken = data.access_token;
+                    localStorage.setItem('gb_token', authToken);
+                    localStorage.setItem('gb_email', email);
+                    checkSubscriptionAndShow();
+                }
+            } catch (e) { errorDiv.innerText = e.message; errorDiv.style.display = 'block'; }
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('tab-ai').classList.toggle('active', mode === 'ai');
+            document.getElementById('tab-self').classList.toggle('active', mode === 'self');
+            document.getElementById('ai-controls').style.display = mode === 'ai' ? 'flex' : 'none';
+            document.getElementById('self-controls').style.display = mode === 'self' ? 'block' : 'none';
+            document.getElementById('mode-label').innerText = mode === 'ai' ? 'Ver.AI' : 'セルフ探索';
+            if (map) {
+                if (mode === 'self') {
+                    document.getElementById('map').classList.add('map-self-mode');
+                } else {
+                    document.getElementById('map').classList.remove('map-self-mode');
+                    map.closePopup();
+                }
+            }
+        }
+
+
+        var map, markerClusterGroup, polygonLayerGroup;
+        function initMap() {
+            if (map) return;
+            map = L.map('map', { preferCanvas: true, maxZoom: 21 }).setView([35.6812, 139.7671], 12);
+            L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { attribution: '© Google Maps', maxZoom: 21 }).addTo(map);
+
+            // ピンのレイヤー（常に表示）
+            markerClusterGroup = L.markerClusterGroup({
+                disableClusteringAtZoom: 16,
+                maxClusterRadius: 50
+            });
+            map.addLayer(markerClusterGroup);
+
+            // ポリゴンのレイヤー（詳細時のみ表示）
+            polygonLayerGroup = L.layerGroup();
+
+            map.on('zoomend', refreshVisibility);
+            map.on('moveend', updateList);
+
+            // 現在地コントロール（ズームボタン下）
+            const LocateControl = L.Control.extend({
+                options: { position: 'topleft' },
+                onAdd: function() {
+                    const btn = L.DomUtil.create('a', 'leaflet-bar leaflet-control');
+                    btn.style.cssText = 'display:flex;align-items:center;justify-content:center;width:26px;height:26px;cursor:pointer;background:white;';
+                    btn.title = '現在地へ移動';
+                    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="3.5" fill="#4299e1"/>
+                        <circle cx="12" cy="12" r="7.5" fill="none" stroke="#4299e1" stroke-width="2"/>
+                        <line x1="12" y1="1" x2="12" y2="5.5" stroke="#4299e1" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="12" y1="18.5" x2="12" y2="23" stroke="#4299e1" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="1" y1="12" x2="5.5" y2="12" stroke="#4299e1" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="18.5" y1="12" x2="23" y2="12" stroke="#4299e1" stroke-width="2" stroke-linecap="round"/>
+                    </svg>`;
+                    L.DomEvent.on(btn, 'click', L.DomEvent.stopPropagation)
+                              .on(btn, 'click', L.DomEvent.preventDefault)
+                              .on(btn, 'click', goToCurrentLocation);
+                    return btn;
+                }
+            });
+            new LocateControl().addTo(map);
+
+            // セルフ探索: 地図クリックで住所取得
+            map.on('click', async (e) => {
+                if (currentMode !== 'self') return;
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                const popup = L.popup()
+                    .setLatLng(e.latlng)
+                    .setContent('📍 住所を取得中...')
+                    .openOn(map);
+                try {
+                    const res = await fetch(`/api/reverse-geocode?lat=${lat}&lon=${lng}`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const data = await res.json();
+                    const address = data.address || '住所情報なし';
+                    popup.setContent(`
+                        <div style="min-width:200px;">
+                            <div style="font-weight:bold; margin-bottom:6px;">📍 ${address}</div>
+                            <div style="font-size:0.8rem; color:#718096;">
+                                緯度: ${lat.toFixed(6)}<br>
+                                経度: ${lng.toFixed(6)}
+                            </div>
+                            <div style="font-size:0.75rem; color:#a0aec0; margin-top:6px;">地番: 要登記照会</div>
+                            <button onclick="window.open('https://www.google.com/maps?q=${lat},${lng}&t=k')"
+                                style="margin-top:8px; width:100%; padding:5px; background:#3182ce; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.8rem;">
+                                衛星写真で確認
+                            </button>
+                            <button onclick="window.open('https://labs.mapple.com/mapplexml.html#18/${lat}/${lng}')"
+                                style="margin-top:4px; width:100%; padding:5px; background:#ed8936; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.8rem;">
+                                Mappleで地番確認
+                            </button>
+                        </div>
+                    `);
+                } catch (err) {
+                    popup.setContent(`📍 緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)}`);
+                }
+            });
+
+        }
+
+        function refreshVisibility() {
+            if (!map) return;
+            const zoom = map.getZoom();
+            if (zoom >= 16) {
+                // 詳細ズーム時はポリゴンを表示
+                if (!map.hasLayer(polygonLayerGroup)) map.addLayer(polygonLayerGroup);
+            } else {
+                // 広域ズーム時はポリゴンを隠す（ピンはそのまま）
+                if (map.hasLayer(polygonLayerGroup)) map.removeLayer(polygonLayerGroup);
+            }
+        }
+
+        function openConditionModal() {
+            document.getElementById('condition-modal').style.display = 'flex';
+        }
+        
+        function closeConditionModal(force=false) {
+            if(force || (event && event.target.id === 'condition-modal')) {
+                document.getElementById('condition-modal').style.display = 'none';
+            }
+        }
+
+        let loadingInterval;
+        function resetLoadingSteps() {
+            for (let i = 1; i <= 4; i++) {
+                const el = document.getElementById('step' + i);
+                if(el) {
+                    el.className = 'step-item';
+                    el.querySelector('.step-icon').textContent = '';
+                }
+            }
+        }
+
+        function startLoadingSteps() {
+            resetLoadingSteps();
+            let currentStep = 1;
+            
+            function updateStep() {
+                if (currentStep > 1) {
+                    const prev = document.getElementById('step' + (currentStep - 1));
+                    if(prev) {
+                        prev.className = 'step-item step-done';
+                        prev.querySelector('.step-icon').textContent = '✓';
+                    }
+                }
+                if (currentStep <= 4) {
+                    const curr = document.getElementById('step' + currentStep);
+                    if(curr) {
+                        curr.className = 'step-item step-active';
+                        curr.querySelector('.step-icon').textContent = '⚡';
+                    }
+                    currentStep++;
+                    const nextTime = Math.random() * 800 + 400;
+                    loadingInterval = setTimeout(updateStep, nextTime);
+                }
+            }
+            updateStep();
+        }
+
+        function stopLoadingSteps() {
+            clearTimeout(loadingInterval);
+            for (let i = 1; i <= 4; i++) {
+                const el = document.getElementById('step' + i);
+                if(el) {
+                    el.className = 'step-item step-done';
+                    el.querySelector('.step-icon').textContent = '✓';
+                }
+            }
+        }
+
+        var candidates = [];
+        async function searchCandidates() {
+            if (!map) return;
+            map.dragging.disable();
+            document.getElementById('loading-overlay').style.display = 'flex';
+            startLoadingSteps();
+            
+            // 検索条件の取得
+            const maxSlope = document.getElementById('cond-slope') ? document.getElementById('cond-slope').value : 5.0;
+            const minBldg = document.getElementById('cond-bldg') ? document.getElementById('cond-bldg').value : 50;
+            const maxRoad = document.getElementById('cond-road') ? document.getElementById('cond-road').value : 10;
+            const numPoints = document.getElementById('cond-points') ? document.getElementById('cond-points').value : 60;
+
+            var b = map.getBounds();
+            try {
+                const response = await fetch(`/api/candidates?north=${b.getNorth()}&south=${b.getSouth()}&east=${b.getEast()}&west=${b.getWest()}&max_slope=${maxSlope}&min_bldg_dist=${minBldg}&max_road_dist=${maxRoad}&num_points=${numPoints}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                stopLoadingSteps();
+                await new Promise(r => setTimeout(r, 600)); // 完了表示を見せるためのディレイ
+                
+                const existingIds = new Set(candidates.map(c => c.id));
+                data.forEach(d => { if (!existingIds.has(d.id)) candidates.push(d); });
+                renderMarkers();
+                updateList();
+            } finally {
+                map.dragging.enable();
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+
+        function renderMarkers() {
+            // 一旦クリア
+            markerClusterGroup.clearLayers();
+            polygonLayerGroup.clearLayers();
+
+            candidates.forEach(c => {
+                // 1. クラスター用ピンの作成 (ズームアウト時はすべてピン)
+                const m = L.marker([c.lat, c.lon]);
+                m.on('click', () => showDetails(c));
+                markerClusterGroup.addLayer(m);
+
+                // 2. 詳細ズーム時 (zoom >= 16) の表示
+                if (c.geometry) {
+                    // 農地データなど: ポリゴンとして描画
+                    try {
+                        const geom = JSON.parse(c.geometry);
+                        if (geom.type === "Polygon" || geom.type === "MultiPolygon") {
+                            const l = L.geoJSON(geom, { 
+                                style: { color: "#27ae60", weight: 2, fillColor: "#2ecc71", fillOpacity: 0.5 } 
+                            });
+                            l.on('click', () => showDetails(c));
+                            polygonLayerGroup.addLayer(l);
+                        }
+                    } catch (e) {
+                        console.error("GeoJSON parse error", e);
+                    }
+                } else {
+                    // AI抽出データなど: ポリゴンを持たない場合は、詳細ズーム時もピンとして表示する
+                    const m_detail = L.marker([c.lat, c.lon]);
+                    m_detail.on('click', () => showDetails(c));
+                    polygonLayerGroup.addLayer(m_detail);
+                }
+            });
+            refreshVisibility();
+        }
+
+        function updateList() {
+            if (!map) return;
+            var b = map.getBounds();
+            var visibleCount = 0;
+            document.getElementById('list-container').innerHTML = '';
+            candidates.forEach(c => {
+                if (b.contains(L.latLng(c.lat, c.lon))) {
+                    visibleCount++;
+                    const card = document.createElement('div');
+                    card.className = 'candidate-card';
+                    card.innerHTML = `
+                        <div style="font-weight:bold; font-size:0.9rem; color:#2d3748; margin-bottom:2px;">📍 ${c.lat.toFixed(5)}, ${c.lon.toFixed(5)}</div>
+                        <div style="font-size:0.7rem; color:#a0aec0; margin-bottom:6px;">ID: ${c.id}</div>
+                        <div style="font-size:0.8rem; color:#4a5568;">傾斜: ${c.slope}° | 離隔: ${c.dist}m</div>
+                    `;
+                    card.onclick = () => { map.setView([c.lat, c.lon], 17); showDetails(c); };
+                    document.getElementById('list-container').appendChild(card);
+                }
+            });
+            document.getElementById('count').innerText = visibleCount;
+        }
+
+        function showDetails(c) {
+            var panel = document.getElementById('parcel-info');
+            panel.style.display = 'block';
+            let registryHtml = c.chiban ? `
+                <div style="background:#ebf8ff; padding:10px; border-radius:6px; border:1px solid #bee3f8;">
+                    <b>地番:</b> ${c.chiban}<br><b>地目:</b> ${c.chimoku}<br><b>所有者:</b> ${c.owner}
+                </div>` : `<button class="btn-primary" onclick="fetchRegistryInfo('${c.id}', ${c.lat}, ${c.lon})">登記情報を一括取得</button>`;
+
+            panel.innerHTML = `
+                <div style="display:flex; justify-content:space-between;">
+                    <div style="font-weight:bold; font-size:1rem; color:#2d3748;">📍 ${c.lat.toFixed(5)}, ${c.lon.toFixed(5)}</div>
+                    <button onclick="this.parentElement.parentElement.style.display='none'" style="border:none; background:none; font-size:1.2rem; cursor:pointer;">×</button>
+                </div>
+                <div style="font-size:0.75rem; color:#a0aec0; margin-top:3px;">ID: ${c.id}</div>
+                <div style="margin-top:10px; font-size:0.9rem;">傾斜: ${c.slope}° ✅ | 離隔: ${c.dist}m ✅</div>
+                <hr style="margin:15px 0; border:0; border-top:1px solid #eee;">
+                <div id="registry-result-${c.id}">${registryHtml}</div>
+                <button class="btn-primary" style="background:#3182ce;" onclick="window.open('https://www.google.com/maps?q=${c.lat},${c.lon}&t=k')">Googleマップ (航空写真)</button>
+                <button class="btn-primary" style="background:#ed8936;" onclick="window.open('https://labs.mapple.com/mapplexml.html#18/${c.lat}/${c.lon}')">Mappleで地番確認</button>
+                <button class="btn-primary" onclick="window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${c.lat},${c.lon}')">ストリートビューで確認</button>
+                `;
+        }
+
+        async function fetchRegistryInfo(id, lat, lon) {
+            const resultDiv = document.getElementById('registry-result-' + id);
+            resultDiv.innerHTML = "🔄 照会中...";
+            try {
+                const res = await fetch('/api/registry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify([{ id, lat, lon }])
+                });
+                const data = await res.json();
+                const reg = data[0];
+                const c = candidates.find(cand => cand.id === id);
+                if (c) { c.chiban = reg.chiban; c.chimoku = reg.chimoku; c.owner = reg.owner; }
+                resultDiv.innerHTML = `<div style="background:#ebf8ff; padding:10px; border-radius:6px;"><b>地番:</b> ${reg.chiban}<br><b>地目:</b> ${reg.chimoku}<br><b>所有者:</b> ${reg.owner}</div>`;
+            } catch (e) { resultDiv.innerHTML = "❌ 失敗"; }
+        }
+
+        async function redirectToCheckout() {
+            try {
+                const res = await fetch('/api/stripe/create-checkout-session', { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` } });
+                const data = await res.json();
+                if (data.url) window.location.href = data.url;
+            } catch (e) { alert('決済エラー'); }
+        }
+
+        // --- レイヤーパネル ---
+        const MAP_LAYERS = {
+            slope: {
+                tile: 'https://cyberjapandata.gsi.go.jp/xyz/slopemap/{z}/{x}/{y}.png',
+                opacity: 0.6, maxZoom: 18
+            },
+            landuse: {},
+            admin: {
+                tile: 'https://cyberjapandata.gsi.go.jp/xyz/lcmfc2/{z}/{x}/{y}.png',
+                opacity: 0.7, maxZoom: 17
+            },
+            flood: {
+                tile: 'https://disaportaldata.gsi.go.jp/raster/01_flood_l1_shinsuishin_newlegend_data/{z}/{x}/{y}.png',
+                opacity: 0.6, maxZoom: 17
+            },
+            landslide: {
+                tile: 'https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png',
+                opacity: 0.6, maxZoom: 17
+            },
+            forest_protected: {
+                unavailable: true,
+                portalUrl: 'https://www.rinya.maff.go.jp/j/keikaku/hoangis/index.html',
+                portalName: '林野庁 保安林GIS'
+            },
+            agri_zone: {
+                wms: 'https://www.machimura.maff.go.jp/wms/contents/nochiku/MapServer/WmsServer',
+                wmsLayers: '0', opacity: 0.5
+            },
+            fude: {},
+            white_zone: {}
+
+        };
+        const activeLayers = {};
+
+        // --- 筆界レイヤー (GeoJSON API) ---
+        let _fudeGeoLayer = null;
+        let _fudeEnabled = false;
+        let _agriZoneGeoLayer = null;
+        let _agriZoneEnabled = false;
+        let _landuseGeoLayer = null;
+        let _landuseWhiteGeoLayer = null;
+        let _landuseEnabled = false;
+        let _whiteZoneGeoLayer = null;
+        let _whiteZoneEnabled = false;
+        let _whiteZoneLastFetchZoom = null;
+
+        function debounce(fn, delay) {
+            let timer;
+            return function(...args) { clearTimeout(timer); timer = setTimeout(() => fn.apply(this, args), delay); };
+        }
+
+        function showLayerToast(msg) {
+            let el = document.getElementById('layer-toast');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'layer-toast';
+                el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.3s';
+                document.body.appendChild(el);
+            }
+            el.textContent = msg;
+            el.style.opacity = '1';
+            clearTimeout(el._t);
+            el._t = setTimeout(() => { el.style.opacity = '0'; }, 2500);
+        }
+
+        function showUnavailableToast(portalName, portalUrl) {
+            let el = document.getElementById('unavailable-toast');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'unavailable-toast';
+                el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#7c3aed;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;display:flex;align-items:center;gap:10px;white-space:nowrap';
+                document.body.appendChild(el);
+            }
+            el.innerHTML = `⚠ 外部サービス変更により利用不可 — <a href="${portalUrl}" target="_blank" rel="noopener" style="color:#c4b5fd;text-decoration:underline;">${portalName}を開く</a>`;
+            el.style.opacity = '1';
+            clearTimeout(el._t);
+            el._t = setTimeout(() => { el.style.opacity = '0'; }, 5000);
+        }
+
+        function fetchAndRenderFude() {
+            if (!_fudeEnabled) return;
+            if (map.getZoom() < 12) {
+                showLayerToast('筆界レイヤーはzoom 12以上で表示されます');
+                if (_fudeGeoLayer) { map.removeLayer(_fudeGeoLayer); _fudeGeoLayer = null; }
+                return;
+            }
+            const b = map.getBounds();
+            fetch(`/api/layers/fude?north=${b.getNorth()}&south=${b.getSouth()}&east=${b.getEast()}&west=${b.getWest()}`, {
+                headers: { 'Authorization': 'Bearer ' + authToken }
+            })
+            .then(r => {
+                if (!r.ok) { showLayerToast('筆界: ズームインしてください'); return null; }
+                return r.json();
+            })
+            .then(geojson => {
+                if (!geojson) return;
+                if (_fudeGeoLayer) map.removeLayer(_fudeGeoLayer);
+                _fudeGeoLayer = L.geoJSON(geojson, {
+                    style: { color: '#a855f7', weight: 1, fillColor: '#a855f7', fillOpacity: 0.15 }
+                }).addTo(map);
+                if (geojson.features.length === 2000) showLayerToast('筆界: 表示上限2000件（さらにズームインで絞り込み）');
+            })
+            .catch(() => showLayerToast('筆界データの取得に失敗しました'));
+        }
+
+        function fetchAndRenderAgriZone() {
+            if (!_agriZoneEnabled) return;
+            if (map.getZoom() < 6) {
+                showLayerToast('農業振興地域レイヤーはzoom 6以上で表示されます');
+                if (_agriZoneGeoLayer) { map.removeLayer(_agriZoneGeoLayer); _agriZoneGeoLayer = null; }
+                return;
+            }
+            const b = map.getBounds();
+            fetch(`/api/layers/agri_zone?north=${b.getNorth()}&south=${b.getSouth()}&east=${b.getEast()}&west=${b.getWest()}`, {
+                headers: { 'Authorization': 'Bearer ' + authToken }
+            })
+            .then(r => {
+                if (!r.ok) { showLayerToast('農業振興地域: ズームインしてください'); return null; }
+                return r.json();
+            })
+            .then(geojson => {
+                if (!geojson) return;
+                if (_agriZoneGeoLayer) map.removeLayer(_agriZoneGeoLayer);
+                _agriZoneGeoLayer = L.geoJSON(geojson, {
+                    style: { color: '#3b82f6', weight: 1.5, fillColor: '#3b82f6', fillOpacity: 0.2 }
+                }).addTo(map);
+                if (geojson.features.length === 500) showLayerToast('農業振興地域: 表示上限500件（さらにズームインで絞り込み）');
+            })
+            .catch(() => showLayerToast('農業振興地域データの取得に失敗しました'));
+        }
+
+        function fetchAndRenderLanduse() {
+            if (!_landuseEnabled) return;
+            if (map.getZoom() < 6) {
+                showLayerToast('農地レイヤーはzoom 6以上で表示されます');
+                if (_landuseGeoLayer) { map.removeLayer(_landuseGeoLayer); _landuseGeoLayer = null; }
+                return;
+            }
+            const b = map.getBounds();
+            fetch(`/api/layers/agri_zone?north=${b.getNorth()}&south=${b.getSouth()}&east=${b.getEast()}&west=${b.getWest()}`, {
+                headers: { 'Authorization': 'Bearer ' + authToken }
+            })
+            .then(r => { if (!r.ok) { showLayerToast('農地: ズームインしてください'); return null; } return r.json(); })
+            .then(geojson => {
+                if (!geojson) return;
+                if (_landuseGeoLayer) map.removeLayer(_landuseGeoLayer);
+                _landuseGeoLayer = L.geoJSON(geojson, {
+                    style: { color: '#22c55e', weight: 1.5, fillColor: '#22c55e', fillOpacity: 0.2 }
+                }).addTo(map);
+            })
+            .catch(() => showLayerToast('農地データの取得に失敗しました'));
+        }
+
+        function fetchAndRenderWhiteZone() {
+            if (!_whiteZoneEnabled) return;
+            const zoom = map.getZoom();
+
+            if (zoom < 12) {
+                showLayerToast('農地（白地）レイヤーはzoom 12以上で表示されます');
+                if (_whiteZoneGeoLayer) { map.removeLayer(_whiteZoneGeoLayer); _whiteZoneGeoLayer = null; }
+                _whiteZoneLastFetchZoom = null;
+                return;
+            }
+
+            // ズームアウト時は読み込まずトースト表示のみ
+            if (_whiteZoneLastFetchZoom !== null && zoom < _whiteZoneLastFetchZoom) {
+                if (_whiteZoneGeoLayer) { map.removeLayer(_whiteZoneGeoLayer); _whiteZoneGeoLayer = null; }
+                showLayerToast('農地（白地）: ズームインすると再読み込みされます');
+                _whiteZoneLastFetchZoom = null;
+                return;
+            }
+
+            _whiteZoneLastFetchZoom = zoom;
+            const b = map.getBounds();
+            fetch(`/api/layers/fude?north=${b.getNorth()}&south=${b.getSouth()}&east=${b.getEast()}&west=${b.getWest()}`, {
+                headers: { 'Authorization': 'Bearer ' + authToken }
+            })
+            .then(r => {
+                if (!r.ok) { showLayerToast('農地（白地）: ズームインしてください'); return null; }
+                return r.json();
+            })
+            .then(geojson => {
+                if (!geojson) return;
+                if (_whiteZoneGeoLayer) map.removeLayer(_whiteZoneGeoLayer);
+                _whiteZoneGeoLayer = L.geoJSON(geojson, {
+                    style: { color: '#a855f7', weight: 1, fillColor: '#a855f7', fillOpacity: 0.2 }
+                }).addTo(map);
+                if (geojson.features.length === 2000) showLayerToast('農地（白地）: 表示上限2000件（さらにズームインで絞り込み）');
+            })
+            .catch(() => showLayerToast('農地（白地）データの取得に失敗しました'));
+        }
+
+        const _fetchFudeDebounced = debounce(fetchAndRenderFude, 300);
+        const _fetchAgriZoneDebounced = debounce(fetchAndRenderAgriZone, 300);
+        const _fetchLanduseDebounced = debounce(fetchAndRenderLanduse, 300);
+        const _fetchWhiteZoneDebounced = debounce(fetchAndRenderWhiteZone, 300);
+
+        function toggleLayer(layerId, checked) {
+            const def = MAP_LAYERS[layerId];
+            if (checked && def && def.unavailable) {
+                showUnavailableToast(def.portalName, def.portalUrl);
+                document.querySelector(`input[data-layer="${layerId}"]`).checked = false;
+                return;
+            }
+            if (layerId === 'landuse') {
+                _landuseEnabled = checked;
+                if (checked) {
+                    fetchAndRenderLanduse();
+                    map.on('moveend', _fetchLanduseDebounced);
+                } else {
+                    map.off('moveend', _fetchLanduseDebounced);
+                    if (_landuseGeoLayer) { map.removeLayer(_landuseGeoLayer); _landuseGeoLayer = null; }
+                }
+                return;
+            }
+            if (layerId === 'agri_zone') {
+                _agriZoneEnabled = checked;
+                if (checked) {
+                    fetchAndRenderAgriZone();
+                    map.on('moveend', _fetchAgriZoneDebounced);
+                } else {
+                    map.off('moveend', _fetchAgriZoneDebounced);
+                    if (_agriZoneGeoLayer) { map.removeLayer(_agriZoneGeoLayer); _agriZoneGeoLayer = null; }
+                }
+                return;
+            }
+            if (layerId === 'white_zone') {
+                _whiteZoneEnabled = checked;
+                if (checked) {
+                    fetchAndRenderWhiteZone();
+                    map.on('moveend', _fetchWhiteZoneDebounced);
+                } else {
+                    map.off('moveend', _fetchWhiteZoneDebounced);
+                    if (_whiteZoneGeoLayer) { map.removeLayer(_whiteZoneGeoLayer); _whiteZoneGeoLayer = null; }
+                    _whiteZoneLastFetchZoom = null;
+                }
+                return;
+            }
+            if (layerId === 'fude') {
+                _fudeEnabled = checked;
+                if (checked) {
+                    fetchAndRenderFude();
+                    map.on('moveend', _fetchFudeDebounced);
+                } else {
+                    map.off('moveend', _fetchFudeDebounced);
+                    if (_fudeGeoLayer) { map.removeLayer(_fudeGeoLayer); _fudeGeoLayer = null; }
+                }
+                return;
+            }
+            if (checked) {
+                let layer;
+                if (def && def.wms) {
+                    layer = L.tileLayer.wms(def.wms, {
+                        layers: def.wmsLayers, format: 'image/png',
+                        transparent: true, opacity: def.opacity
+                    });
+                } else if (def && def.tile) {
+                    layer = L.tileLayer(def.tile, { opacity: def.opacity, maxZoom: def.maxZoom || 18 });
+                }
+                if (layer) layer.addTo(map);
+                activeLayers[layerId] = layer;
+            } else {
+                if (activeLayers[layerId]) {
+                    map.removeLayer(activeLayers[layerId]);
+                    delete activeLayers[layerId];
+                }
+            }
+        }
+
+        document.querySelectorAll('#layer-panel input[type=checkbox]').forEach(cb => {
+            cb.addEventListener('change', (e) => toggleLayer(e.target.dataset.layer, e.target.checked));
+        });
+
+        // --- 住所モーダル ---
+        const prefectures = [
+            { region: "北海道・東北", prefs: ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県"] },
+            { region: "関東", prefs: ["茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県"] },
+            { region: "中部", prefs: ["新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県"] },
+            { region: "近畿", prefs: ["三重県", "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県"] },
+            { region: "中国", prefs: ["鳥取県", "島根県", "岡山県", "広島県", "山口県"] },
+            { region: "四国", prefs: ["徳島県", "香川県", "愛媛県", "高知県"] },
+            { region: "九州・沖縄", prefs: ["福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"] }
+        ];
+        let selectedPref = "";
+        function goToCurrentLocation() {
+            if (!navigator.geolocation) { alert('このブラウザは位置情報に対応していません'); return; }
+            navigator.geolocation.getCurrentPosition(
+                pos => map.flyTo([pos.coords.latitude, pos.coords.longitude], 14),
+                () => alert('位置情報の取得に失敗しました')
+            );
+        }
+
+        function openModal() { document.getElementById('address-modal').style.display = 'flex'; showPrefectures(); }
+        function closeModal(force=false) { if(force || (event && event.target.id === 'address-modal')) document.getElementById('address-modal').style.display = 'none'; }
+        
+        function showPrefectures() {
+            document.getElementById('modal-title').innerText = "都道府県を選択";
+            let html = "";
+            prefectures.forEach(g => {
+                html += `<div class="region-group"><div class="region-title">${g.region}</div><div class="pref-grid">`;
+                g.prefs.forEach(p => { html += `<button class="area-btn" onclick="selectPrefecture('${p}')">${p}</button>`; });
+                html += `</div></div>`;
+            });
+            document.getElementById('modal-body').innerHTML = html;
+        }
+
+        async function selectPrefecture(pref) {
+            selectedPref = pref;
+            document.getElementById('modal-title').innerHTML = `<button onclick="showPrefectures()" style="background:none; border:none; color:#a0aec0; cursor:pointer;">◀ </button> ${pref}の市区町村`;
+            document.getElementById('modal-body').innerHTML = `<div style="text-align:center; padding:40px;">🔄 取得中...</div>`;
+            try {
+                const res = await fetch(`https://geoapi.heartrails.com/api/json?method=getCities&prefecture=${encodeURIComponent(pref)}`);
+                const data = await res.json();
+                if (!data.response || !data.response.location) { throw new Error('Data Empty'); }
+                let cities = data.response.location;
+                cities.sort((a, b) => a.city_kana.localeCompare(b.city_kana, 'ja'));
+                let html = `<div class="city-grid">`;
+                cities.forEach(c => { html += `<button class="area-btn" onclick="selectCity('${c.city}')">${c.city}</button>`; });
+                document.getElementById('modal-body').innerHTML = html + `</div>`;
+            } catch (e) { document.getElementById('modal-body').innerHTML = `<div style="color:red; text-align:center;">データの取得に失敗しました。</div><button class="btn-primary" onclick="selectPrefecture('${pref}')">再試行</button>`; }
+        }
+
+        async function selectCity(city) {
+            document.getElementById('address-modal').style.display = 'none';
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(selectedPref + city)}`);
+                const data = await res.json();
+                if (data.length > 0) map.flyTo([parseFloat(data[0].lat), parseFloat(data[0].lon)], 13);
+            } catch(e) { alert("座標の特定に失敗しました。"); }
+        }
+    </script>
+</body>
+</html>

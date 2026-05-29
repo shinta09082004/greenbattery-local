@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.git/
+.gemini/
+data/gis_raw/
+data/processed/
+data/*.db
+data/*.parquet
+data/dem_local/
+photo/
+*.bat
+plans/

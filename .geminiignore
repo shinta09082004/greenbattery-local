@@ -1,0 +1,8 @@
+﻿.env
+*.json
+credentials.json
+*.p12
+*.pem
+*.key
+data/raw/
+data/processed/
