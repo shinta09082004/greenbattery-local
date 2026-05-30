@@ -1,8 +1,10 @@
 # 作業引継ぎ（2026-05-21）
 
 ## リポジトリ
-https://github.com/shinta09082004/greenbattery  
-ブランチ: ローカル `master` → リモート `main`（push時: `git push origin master:main`）
+https://github.com/shinta09082004/greenbattery-local  
+ブランチ: `main`（push時: `git push origin main`）
+
+> ※ `greenbattery`（旧リポジトリ）は参照用に `old-greenbattery` remote として残留。新規作業はすべて `greenbattery-local` で行う。
 
 ---
 
@@ -41,7 +43,7 @@ GitHubへのpushがファイル容量超過で失敗していた。
 
 ```bash
 # Webサーバーテストのみ（DBは自動取得済み）
-python src/web/main.py
+python -m uvicorn src.web.main:app --host 0.0.0.0 --port 8000 --reload
 
 # パイプラインも使いたい場合（約6GB・時間かかる）
 bash scripts/download_all_data.sh

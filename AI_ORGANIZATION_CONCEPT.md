@@ -60,7 +60,7 @@
 ## 主要ファイル構成
 
 ```
-greenbattery/
+greenbattery-local/
 ├── dashboard_ai_v2.html         # フロントエンド全体（分割しない）
 ├── src/web/main.py              # FastAPI エントリポイント・全API
 ├── scripts/                     # GISデータ前処理（geopandas）

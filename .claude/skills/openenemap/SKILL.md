@@ -12,7 +12,7 @@ EneMap AI（FastAPI サーバー）を起動し、アクセスURLを表示する
 
 ## 前提
 
-- カレントディレクトリはプロジェクトルート（`greenbattery`）であること。パスは固定せず、常にプロジェクトルートを基準にする。
+- カレントディレクトリはプロジェクトルート（`greenbattery-local`）であること。パスは固定せず、常にプロジェクトルートを基準にする。
 - サーバーは必ず `python -m uvicorn src.web.main:app` で起動する（プロジェクトルートが sys.path に入り `src` パッケージが import できるため）。`python src/web/main.py` は import エラーになるので使わない。
 
 ## 手順
